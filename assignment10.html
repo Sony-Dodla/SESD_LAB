@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>LMS — Layered Architecture (Presentation, Business Logic, Data Access)</title>
+  <style>
+    :root{--bg:#f6f8fb;--card:#fff;--muted:#556;--accent:#2563eb}
+    body{font-family:Inter,system-ui,Segoe UI,Roboto,Arial; background:var(--bg); margin:0;padding:28px;color:#0b1220}
+    header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+    h1{font-size:20px;margin:0}
+    .container{display:grid;grid-template-columns:1fr 380px;gap:16px}
+    .card{background:var(--card);border-radius:10px;padding:16px;box-shadow:0 10px 24px rgba(15,25,50,0.06)}
+    pre{background:#0b1220;color:#dff;padding:12px;border-radius:8px;overflow:auto}
+    code{font-family:monospace}
+    .layer{padding:12px;border-radius:8px;margin-bottom:12px;border-left:6px solid rgba(37,99,235,0.12)}
+    .layer h3{margin:0 0 6px 0}
+    table{width:100%;border-collapse:collapse}
+    td,th{padding:8px;border-bottom:1px dashed #eef}
+    .muted{color:var(--muted);font-size:13px}
+    .diagram{background:#fff;padding:12px;border-radius:8px;text-align:center}
+    .btn{display:inline-block;padding:8px 10px;border-radius:8px;background:var(--accent);color:#fff;text-decoration:none}
+    footer{margin-top:12px;color:var(--muted);font-size:13px}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Learning Management System (LMS) — Layered Architecture</h1>
+    <div class="muted">Presentation • Business Logic • Data Access</div>
+  </header>
+
+  <div class="container">
+    <main>
+      <section class="card">
+        <h2 style="margin-top:0">Overview</h2>
+        <p class="muted">This page documents a layered architecture for a university LMS that manages courses, enrollments, assignments, and grades. The architecture separates concerns into three primary layers:</p>
+        <ul class="muted">
+          <li><strong>Presentation Layer</strong> — UI, web pages, client apps, input validation, session management.</li>
+          <li><strong>Business Logic Layer (Service Layer)</strong> — domain rules, workflows, authorization, grading logic, notifications.</li>
+          <li><strong>Data Access Layer (Repository/DAO)</strong> — database models, persistence, queries, transactions.</li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <h2 style="margin-top:0">Layer Responsibilities & Examples</h2>
+
+        <div class="layer">
+          <h3>Presentation Layer</h3>
+          <p class="muted">What it contains: React/Vue/Angular pages, server-side templates, REST/GraphQL controllers, authentication UI.</p>
+          <strong>Responsibilities:</strong>
+          <ul class="muted">
+            <li>Render course list, assignment pages, grade reports</li>
+            <li>Collect user input and perform client-side validation</li>
+            <li>Forward requests to Business Logic via REST/GraphQL</li>
+          </ul>
+        </div>
+
+        <div class="layer">
+          <h3>Business Logic Layer</h3>
+          <p class="muted">What it contains: Services, domain models, business rules, validators, authorization checks.</p>
+          <strong>Responsibilities:</strong>
+          <ul class="muted">
+            <li>Enrollment rules (prerequisites, capacity checks)</li>
+            <li>Assignment lifecycle (create, submit, grade, late-penalty rules)</li>
+            <li>Calculate final grades and release grade reports</li>
+            <li>Trigger notifications (email/push) for deadlines and grades</li>
+          </ul>
+        </div>
+
+        <div class="layer">
+          <h3>Data Access Layer</h3>
+          <p class="muted">What it contains: Repositories/DAOs, ORM models, SQL queries, migrations.</p>
+          <strong>Responsibilities:</strong>
+          <ul class="muted">
+            <li>Persist Courses, Students, Enrollments, Assignments, Submissions, Grades</li>
+            <li>Manage transactions, connection pooling and caching</li>
+            <li>Expose repository interfaces used by Business Logic</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2 style="margin-top:0">Example Interfaces & Code Skeletons</h2>
+        <p class="muted">Below are concise examples showing how each layer interacts. These are intentionally language-agnostic and minimal.</p>
+
+        <h4>Presentation (Controller / REST)</h4>
+        <pre><code>// POST /api/enroll
+handleEnrollRequest(req, res) {
+  // 1) validate input (presentation-level)
+  // 2) call EnrollmentService.enrollStudent(studentId, courseId)
+  // 3) map service result to HTTP response
+}
+        </code></pre>
+
+        <h4>Business Logic (Service)</h4>
+        <pre><code>class EnrollmentService {
+  constructor(courseRepo, studentRepo, enrollRepo) { ... }
+  async enrollStudent(studentId, courseId) {
+    // check prerequisites using courseRepo
+    // check capacity
+    // create Enrollment (transactional) via enrollRepo
+    // send notification via NotificationService
+  }
+}
+        </code></pre>
+
+        <h4>Data Access (Repository)</h4>
+        <pre><code>interface EnrollmentRepository {
+  findByStudentAndCourse(studentId, courseId);
+  create(enrollmentObj);
+  beginTransaction(); commit(); rollback();
+}
+        </code></pre>
+      </section>
+
+      <section class="card">
+        <h2 style="margin-top:0">Sample Database Schema (simplified)</h2>
+        <table>
+          <tr><th>Table</th><th>Key Columns</th></tr>
+          <tr><td>Students</td><td>student_id, name, email, password_hash</td></tr>
+          <tr><td>Courses</td><td>course_id, title, credits, capacity</td></tr>
+          <tr><td>Enrollments</td><td>enrollment_id, student_id, course_id, status</td></tr>
+          <tr><td>Assignments</td><td>assignment_id, course_id, title, due_date</td></tr>
+          <tr><td>Submissions</td><td>submission_id, assignment_id, student_id, submitted_at, file_url, grade</td></tr>
+        </table>
+      </section>
+
+      <section class="card">
+        <h2 style="margin-top:0">Security & Design Considerations</h2>
+        <ul class="muted">
+          <li>Authentication: OAuth2 / JWT for API access; store password hashes (bcrypt/argon2).</li>
+          <li>Authorization: RBAC — roles like Student, Instructor, TA, Admin enforced in Business Logic.</li>
+          <li>Input Validation: Presentation layer validates; Business Logic re-validates to prevent tampering.</li>
+          <li>Transactions: Enrollment and grade updates must use DB transactions to keep consistency.</li>
+          <li>Audit Logging: record who graded, changed grades, or changed enrollments.</li>
+        </ul>
+      </section>
+
+    </main>
+
+    <aside>
+      <div class="card">
+        <h3 style="margin-top:0">Architecture Diagram</h3>
+        <div class="diagram">
+          <!-- Simple SVG box diagram -->
+          <svg width="320" height="220" viewBox="0 0 320 220" xmlns="http://www.w3.org/2000/svg">
+            <rect x="20" y="16" width="280" height="50" rx="8" fill="#fff" stroke="#e6eefc"/>
+            <text x="180" y="46" font-family="sans-serif" font-size="12" text-anchor="middle" fill="#0b1220">Presentation Layer (Controllers, UI)</text>
+            <rect x="40" y="86" width="240" height="50" rx="8" fill="#fff" stroke="#e6eefc"/>
+            <text x="160" y="116" font-family="sans-serif" font-size="12" text-anchor="middle" fill="#0b1220">Business Logic Layer (Services, Domain)</text>
+            <rect x="60" y="156" width="200" height="50" rx="8" fill="#fff" stroke="#e6eefc"/>
+            <text x="160" y="186" font-family="sans-serif" font-size="12" text-anchor="middle" fill="#0b1220">Data Access Layer (Repositories, DB)</text>
+            <line x1="160" y1="66" x2="160" y2="86" stroke="#d5e6ff" stroke-width="2"/>
+            <line x1="160" y1="136" x2="160" y2="156" stroke="#d5e6ff" stroke-width="2"/>
+          </svg>
+        </div>
+        <p class="muted small">Arrows indicate the request flow: Presentation → Business → Data. Responses flow back up.</p>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-top:0">Example API Endpoints</h3>
+        <ul class="muted">
+          <li><code>POST /api/enroll</code> — request body: {studentId, courseId}</li>
+          <li><code>GET /api/courses</code> — list courses (pagination, filters)</li>
+          <li><code>POST /api/assignments</code> — instructor creates assignment</li>
+          <li><code>POST /api/assignments/:id/submit</code> — student submits work</li>
+          <li><code>POST /api/assignments/:id/grade</code> — instructor grades submission</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-top:0">Deployment Notes</h3>
+        <p class="muted">Consider separating services: an API service for Business Logic, a static CDN for Presentation assets, a database cluster for persistence, and a background worker queue for notifications and grading jobs.</p>
+        <p class="muted">Use TLS, rate limiting, and secure backups.</p>
+      </div>
+
+    </aside>
+  </div>
+
+  <footer>
+    <div class="muted">Save this file as <code>LMS_Layered_Architecture.html</code>. If you want, I can also generate UML class diagrams or server-side code skeletons (Java/Spring, Node/Express, Python/Django).</div>
+  </footer>
+</body>
+</html>
